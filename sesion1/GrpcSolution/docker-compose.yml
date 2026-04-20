@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+
+  # ─────────────────────────────────────────────────────────────
+  # Servidor gRPC — expone el servicio CatalogoProductos
+  # Puerto interno: 5200 (HTTP/2 gRPC)
+  # ─────────────────────────────────────────────────────────────
+  grpc-server:
+    build:
+      context: .
+      dockerfile: src/GrpcServer/Dockerfile
+    container_name: grpc-server
+    ports:
+      - "5200:5200"           # gRPC accesible desde el host
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://0.0.0.0:5200
+    networks:
+      - grpc-network
+    healthcheck:
+      test: ["CMD", "dotnet", "grpc-health-probe", "-addr=:5200"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ─────────────────────────────────────────────────────────────
+  # Cliente gRPC + API REST + Swagger UI
+  # Puerto interno: 5100 (HTTP/1.1)
+  # Swagger en: http://localhost:5100
+  # ─────────────────────────────────────────────────────────────
+  grpc-client:
+    build:
+      context: .
+      dockerfile: src/GrpcClient/Dockerfile
+    container_name: grpc-client
+    ports:
+      - "5100:5100"           # Swagger accesible desde el host
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://0.0.0.0:5100
+      # Apuntar al servidor por nombre de servicio Docker
+      - GrpcServer__Url=http://grpc-server:5200
+    depends_on:
+      - grpc-server
+    networks:
+      - grpc-network
+
+networks:
+  grpc-network:
+    driver: bridge

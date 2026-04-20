@@ -1,0 +1,12 @@
+**/.dockerignore
+**/.git
+**/.gitignore
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/out
+**/publish
+**/*.user
+**/*.suo
+**/docker-compose*

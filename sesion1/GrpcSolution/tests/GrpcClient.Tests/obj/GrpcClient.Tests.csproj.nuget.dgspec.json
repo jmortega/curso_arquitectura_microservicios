@@ -1,0 +1,179 @@
+{
+  "format": 1,
+  "restore": {
+    "/home/linux/Descargas/GrpcSolution/tests/GrpcClient.Tests/GrpcClient.Tests.csproj": {}
+  },
+  "projects": {
+    "/home/linux/Descargas/GrpcSolution/src/GrpcClient/GrpcClient.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/linux/Descargas/GrpcSolution/src/GrpcClient/GrpcClient.csproj",
+        "projectName": "GrpcClient",
+        "projectPath": "/home/linux/Descargas/GrpcSolution/src/GrpcClient/GrpcClient.csproj",
+        "packagesPath": "/home/linux/.nuget/packages/",
+        "outputPath": "/home/linux/Descargas/GrpcSolution/src/GrpcClient/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/linux/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Google.Protobuf": {
+              "target": "Package",
+              "version": "[3.26.0, )"
+            },
+            "Grpc.AspNetCore": {
+              "target": "Package",
+              "version": "[2.59.0, )"
+            },
+            "Grpc.Net.ClientFactory": {
+              "target": "Package",
+              "version": "[2.59.0, )"
+            },
+            "Grpc.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.59.0, )"
+            },
+            "Microsoft.Extensions.Http.Polly": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[6.5.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.126/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/linux/Descargas/GrpcSolution/tests/GrpcClient.Tests/GrpcClient.Tests.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/linux/Descargas/GrpcSolution/tests/GrpcClient.Tests/GrpcClient.Tests.csproj",
+        "projectName": "GrpcClient.Tests",
+        "projectPath": "/home/linux/Descargas/GrpcSolution/tests/GrpcClient.Tests/GrpcClient.Tests.csproj",
+        "packagesPath": "/home/linux/.nuget/packages/",
+        "outputPath": "/home/linux/Descargas/GrpcSolution/tests/GrpcClient.Tests/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/linux/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/home/linux/Descargas/GrpcSolution/src/GrpcClient/GrpcClient.csproj": {
+                "projectPath": "/home/linux/Descargas/GrpcSolution/src/GrpcClient/GrpcClient.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "FluentAssertions": {
+              "target": "Package",
+              "version": "[6.12.0, )"
+            },
+            "Microsoft.AspNetCore.Mvc.Testing": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.NET.Test.Sdk": {
+              "target": "Package",
+              "version": "[17.8.0, )"
+            },
+            "Moq": {
+              "target": "Package",
+              "version": "[4.20.70, )"
+            },
+            "coverlet.collector": {
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
+            "xunit": {
+              "target": "Package",
+              "version": "[2.6.2, )"
+            },
+            "xunit.runner.visualstudio": {
+              "target": "Package",
+              "version": "[2.5.4, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.126/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

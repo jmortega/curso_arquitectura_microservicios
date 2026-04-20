@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcServer";
+
+package catalogo;
+
+// ──────────────────────────────────────────────────────────────
+// Servicio de Catálogo de Productos
+// ──────────────────────────────────────────────────────────────
+service CatalogoProductos {
+
+  // Obtener un producto por su ID
+  rpc ObtenerProducto (ObtenerProductoRequest) returns (ProductoResponse);
+
+  // Listar todos los productos (con filtro opcional por categoría)
+  rpc ListarProductos (ListarProductosRequest) returns (ListaProductosResponse);
+
+  // Crear un nuevo producto
+  rpc CrearProducto (CrearProductoRequest) returns (ProductoResponse);
+
+  // Actualizar un producto existente
+  rpc ActualizarProducto (ActualizarProductoRequest) returns (ProductoResponse);
+
+  // Eliminar un producto
+  rpc EliminarProducto (EliminarProductoRequest) returns (EliminarProductoResponse);
+
+  // Stream: recibir actualizaciones de precio en tiempo real
+  rpc EscucharPrecios (EscucharPreciosRequest) returns (stream PrecioActualizadoResponse);
+}
+
+// ──────────────────────────────────────────────────────────────
+// Mensajes de entrada
+// ──────────────────────────────────────────────────────────────
+
+message ObtenerProductoRequest {
+  string id = 1;
+}
+
+message ListarProductosRequest {
+  string categoria = 1;     // vacío = todas las categorías
+  int32  pagina    = 2;     // 1-based
+  int32  tamanio   = 3;     // items por página (máx 100)
+}
+
+message CrearProductoRequest {
+  string nombre      = 1;
+  string descripcion = 2;
+  double precio      = 3;
+  int32  stock       = 4;
+  string categoria   = 5;
+}
+
+message ActualizarProductoRequest {
+  string id          = 1;
+  string nombre      = 2;
+  string descripcion = 3;
+  double precio      = 4;
+  int32  stock       = 5;
+  string categoria   = 6;
+}
+
+message EliminarProductoRequest {
+  string id = 1;
+}
+
+message EscucharPreciosRequest {
+  repeated string ids = 1;    // IDs de productos a escuchar
+}
+
+// ──────────────────────────────────────────────────────────────
+// Mensajes de respuesta
+// ──────────────────────────────────────────────────────────────
+
+message ProductoResponse {
+  string id          = 1;
+  string nombre      = 2;
+  string descripcion = 3;
+  double precio      = 4;
+  int32  stock       = 5;
+  string categoria   = 6;
+  string creadoEn    = 7;
+  string actualizadoEn = 8;
+}
+
+message ListaProductosResponse {
+  repeated ProductoResponse productos = 1;
+  int32  total   = 2;
+  int32  pagina  = 3;
+  int32  tamanio = 4;
+}
+
+message EliminarProductoResponse {
+  bool   exito   = 1;
+  string mensaje = 2;
+}
+
+message PrecioActualizadoResponse {
+  string id        = 1;
+  string nombre    = 2;
+  double precio    = 3;
+  string timestamp = 4;
+}
