@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Hash": "V4b2aIRfhRLHTI2c5eZiYVMOqkqa+UJnfhb8pi4H5wE=",
+  "Source": "OauthGithub",
+  "BasePath": "_content/OauthGithub",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "OauthGithub/wwwroot",
+      "Source": "OauthGithub",
+      "ContentRoot": "/home/linux/Descargas/OauthGithub_jwt/wwwroot/",
+      "BasePath": "_content/OauthGithub",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "/home/linux/Descargas/OauthGithub_jwt/wwwroot/swagger-auth.js",
+      "SourceId": "OauthGithub",
+      "SourceType": "Discovered",
+      "ContentRoot": "/home/linux/Descargas/OauthGithub_jwt/wwwroot/",
+      "BasePath": "_content/OauthGithub",
+      "RelativePath": "swagger-auth.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/swagger-auth.js"
+    }
+  ]
+}

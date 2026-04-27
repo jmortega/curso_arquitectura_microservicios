@@ -1,0 +1,25 @@
+{
+  "Files": [
+    {
+      "Id": "/home/linux/Descargas/OauthGithub_jwt/wwwroot/swagger-auth.js",
+      "PackagePath": "staticwebassets/swagger-auth.js"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.OauthGithub.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.build.OauthGithub.props",
+      "PackagePath": "build\\OauthGithub.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildMultiTargeting.OauthGithub.props",
+      "PackagePath": "buildMultiTargeting\\OauthGithub.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildTransitive.OauthGithub.props",
+      "PackagePath": "buildTransitive\\OauthGithub.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

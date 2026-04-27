@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dgSpecHash": "+SgObx0muXWeblhlQJvg9pkljhTGq6yoYxz/Tbci0VI26Wc1GHNi1mUJOJyllaMAsH0HYw8K45zu/yXwL2PjOA==",
+  "success": true,
+  "projectFilePath": "/home/linux/Descargas/sesion4/PatronStrategy/PatronStrategy.csproj",
+  "expectedPackageFiles": [
+    "/home/linux/.nuget/packages/microsoft.aspnetcore.openapi/8.0.25/microsoft.aspnetcore.openapi.8.0.25.nupkg.sha512",
+    "/home/linux/.nuget/packages/microsoft.extensions.apidescription.server/6.0.5/microsoft.extensions.apidescription.server.6.0.5.nupkg.sha512",
+    "/home/linux/.nuget/packages/microsoft.openapi/1.6.14/microsoft.openapi.1.6.14.nupkg.sha512",
+    "/home/linux/.nuget/packages/swashbuckle.aspnetcore/6.6.2/swashbuckle.aspnetcore.6.6.2.nupkg.sha512",
+    "/home/linux/.nuget/packages/swashbuckle.aspnetcore.swagger/6.6.2/swashbuckle.aspnetcore.swagger.6.6.2.nupkg.sha512",
+    "/home/linux/.nuget/packages/swashbuckle.aspnetcore.swaggergen/6.6.2/swashbuckle.aspnetcore.swaggergen.6.6.2.nupkg.sha512",
+    "/home/linux/.nuget/packages/swashbuckle.aspnetcore.swaggerui/6.6.2/swashbuckle.aspnetcore.swaggerui.6.6.2.nupkg.sha512"
+  ],
+  "logs": []
+}

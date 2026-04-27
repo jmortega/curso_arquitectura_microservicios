@@ -1,0 +1,6 @@
+@PatronStrategy_HostAddress = http://localhost:5080
+
+GET {{PatronStrategy_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

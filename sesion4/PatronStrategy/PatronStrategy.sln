@@ -1,0 +1,30 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatronStrategy", "PatronStrategy.csproj", "{EAA822EE-554E-0E0D-01E0-99413A78017F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GestionAcademica", "GestionAcademica\GestionAcademica.csproj", "{09DBE3B4-BB16-48BD-87C6-47D0F244AC10}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EAA822EE-554E-0E0D-01E0-99413A78017F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAA822EE-554E-0E0D-01E0-99413A78017F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAA822EE-554E-0E0D-01E0-99413A78017F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAA822EE-554E-0E0D-01E0-99413A78017F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09DBE3B4-BB16-48BD-87C6-47D0F244AC10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09DBE3B4-BB16-48BD-87C6-47D0F244AC10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09DBE3B4-BB16-48BD-87C6-47D0F244AC10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09DBE3B4-BB16-48BD-87C6-47D0F244AC10}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EE2F153E-93C7-4507-AE92-A6BA4073DF89}
+	EndGlobalSection
+EndGlobal
