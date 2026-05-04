@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Library: Coverlet puede instrumentar este tipo de proyecto sin problemas -->
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Calculadora.Core</RootNamespace>
+    <AssemblyName>Calculadora.Core</AssemblyName>
+  </PropertyGroup>
+
+</Project>

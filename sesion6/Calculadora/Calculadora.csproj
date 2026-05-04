@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Calculadora</RootNamespace>
+    <AssemblyName>Calculadora</AssemblyName>
+
+  </PropertyGroup>
+
+   <!-- Coverage: excluir tests y entrypoint, incluir solo lógica -->
+  <PropertyGroup>
+    <CoverletExclude>[Calculadora]*Tests*,[Calculadora]*Program*</CoverletExclude>
+    <CoverletInclude>[Calculadora]*Services.*,[Calculadora]*Exceptions.*,[Calculadora]*Interfaces.*</CoverletInclude>
+  </PropertyGroup>
+
+  <!-- ── Paquetes de Testing ── -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk"     Version="17.8.0" />
+    <PackageReference Include="xunit"                      Version="2.6.2"  />
+    <PackageReference Include="xunit.runner.visualstudio"  Version="2.5.4"  />
+    <PackageReference Include="FluentAssertions"           Version="6.12.0" />
+    <PackageReference Include="coverlet.collector"         Version="6.0.0"  />
+    <PackageReference Include="coverlet.msbuild"           Version="6.0.0"  />
+  </ItemGroup>
+
+</Project>

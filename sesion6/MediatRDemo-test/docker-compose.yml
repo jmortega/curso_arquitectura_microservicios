@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # MySQL 8 — base de datos principal
+  # ─────────────────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: mediator-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD:  root_secret
+      MYSQL_DATABASE:       mediator_demo
+      MYSQL_USER:           mediator_user
+      MYSQL_PASSWORD:       mediator_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "mediator_user", "-pmediator_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - mediator-net
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # API — MediatR Demo
+  # Swagger en: http://localhost:8080
+  # ─────────────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mediator-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: "Server=mysql;Port=3306;Database=mediator_demo;User=mediator_user;Password=mediator_pass;AllowPublicKeyRetrieval=true;SslMode=none;"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/swagger/v1/swagger.json"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - mediator-net
+
+volumes:
+  mysql_data:
+
+networks:
+  mediator-net:
+    driver: bridge

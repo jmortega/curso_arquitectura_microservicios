@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "dgSpecHash": "XTmhtxG2qydhbqrrdUroUjD300aRQOvllPa/3J/qBgFNTgUVdu58kuelC1AFbSMkxNl+tSFS/9sSzd/VAeFhbA==",
+  "success": true,
+  "projectFilePath": "/home/linux/Descargas/sesion6-testing/TestContainers/WebApplication1.csproj",
+  "expectedPackageFiles": [
+    "/home/linux/.nuget/packages/bouncycastle.cryptography/2.6.2/bouncycastle.cryptography.2.6.2.nupkg.sha512",
+    "/home/linux/.nuget/packages/docker.dotnet.enhanced/3.131.1/docker.dotnet.enhanced.3.131.1.nupkg.sha512",
+    "/home/linux/.nuget/packages/docker.dotnet.enhanced.x509/3.131.1/docker.dotnet.enhanced.x509.3.131.1.nupkg.sha512",
+    "/home/linux/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.2/microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
+    "/home/linux/.nuget/packages/microsoft.extensions.logging.abstractions/8.0.3/microsoft.extensions.logging.abstractions.8.0.3.nupkg.sha512",
+    "/home/linux/.nuget/packages/sharpziplib/1.4.2/sharpziplib.1.4.2.nupkg.sha512",
+    "/home/linux/.nuget/packages/ssh.net/2025.1.0/ssh.net.2025.1.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/system.io.pipelines/8.0.0/system.io.pipelines.8.0.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/testcontainers/4.11.0/testcontainers.4.11.0.nupkg.sha512"
+  ],
+  "logs": []
+}

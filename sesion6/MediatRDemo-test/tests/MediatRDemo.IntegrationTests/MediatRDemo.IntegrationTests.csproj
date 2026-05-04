@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>MediatRDemo.IntegrationTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Test framework -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk"              Version="17.8.0" />
+    <PackageReference Include="xunit"                               Version="2.6.2"  />
+    <PackageReference Include="xunit.runner.visualstudio"           Version="2.5.4"  />
+    <PackageReference Include="FluentAssertions"                    Version="6.12.0" />
+
+    <!-- WebApplicationFactory — levanta el servidor en memoria -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing"    Version="8.0.0"  />
+
+    <!-- Testcontainers — arranca un MySQL real en Docker para los tests -->
+    <PackageReference Include="Testcontainers"                      Version="3.6.0"  />
+    <PackageReference Include="Testcontainers.MySql"                Version="3.6.0"  />
+
+    <!-- EF Core + MySQL para interactuar con la DB en los tests -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore"       Version="8.0.0"  />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql"    Version="8.0.0"  />
+
+    <PackageReference Include="coverlet.collector"                  Version="6.0.0"  />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Referencia al proyecto bajo test -->
+    <ProjectReference Include="..\..\src\MediatRDemo.API\MediatRDemo.API.csproj" />
+  </ItemGroup>
+
+  <!--
+    Copiar el deps.json del proyecto web al directorio de tests para que
+    WebApplicationFactory pueda localizar el ensamblado correctamente.
+  -->
+  <Target Name="CopyApiDepsJson" AfterTargets="Build">
+    <Copy
+      SourceFiles="..\..\src\MediatRDemo.API\bin\$(Configuration)\$(TargetFramework)\MediatRDemo.API.deps.json"
+      DestinationFiles="$(OutputPath)MediatRDemo.API.deps.json"
+      SkipUnchangedFiles="true"
+      Condition="Exists('..\..\src\MediatRDemo.API\bin\$(Configuration)\$(TargetFramework)\MediatRDemo.API.deps.json')" />
+  </Target>
+
+</Project>

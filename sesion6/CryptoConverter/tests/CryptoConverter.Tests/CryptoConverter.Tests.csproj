@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>CryptoConverter.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- xUnit -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk"            Version="17.8.0" />
+    <PackageReference Include="xunit"                             Version="2.6.2"  />
+    <PackageReference Include="xunit.runner.visualstudio"         Version="2.5.4"  />
+
+    <!-- Assertions legibles -->
+    <PackageReference Include="FluentAssertions"                  Version="6.12.0" />
+
+    <!-- Mocking -->
+    <PackageReference Include="Moq"                               Version="4.20.70" />
+
+    <!-- Tests de integración con WebApplicationFactory -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing"  Version="8.0.0" />
+
+    <!-- Simular respuestas HTTP -->
+    <PackageReference Include="RichardSzalay.MockHttp"            Version="7.0.0" />
+
+    <!-- Coverage -->
+    <PackageReference Include="coverlet.collector"                Version="6.0.0" />
+    <PackageReference Include="coverlet.msbuild"                  Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CryptoConverter.API\CryptoConverter.API.csproj" />
+  </ItemGroup>
+
+</Project>
