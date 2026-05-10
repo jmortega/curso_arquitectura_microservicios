@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dgSpecHash": "C010Ecp0eL9OiouysOwAK6cthPMKqEySvPIbSfNu3M7XJq2Xl0it49Q2+4SMlvyek0xfxFEosXLvn9TpxOcPIg==",
+  "success": true,
+  "projectFilePath": "/home/linux/Descargas/sesion7/k8s-todo/src/TodoApi.csproj",
+  "expectedPackageFiles": [
+    "/home/linux/.nuget/packages/microsoft.aspnetcore.openapi/8.0.0/microsoft.aspnetcore.openapi.8.0.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/microsoft.extensions.apidescription.server/6.0.5/microsoft.extensions.apidescription.server.6.0.5.nupkg.sha512",
+    "/home/linux/.nuget/packages/microsoft.openapi/1.4.3/microsoft.openapi.1.4.3.nupkg.sha512",
+    "/home/linux/.nuget/packages/swashbuckle.aspnetcore/6.5.0/swashbuckle.aspnetcore.6.5.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/swashbuckle.aspnetcore.swagger/6.5.0/swashbuckle.aspnetcore.swagger.6.5.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/swashbuckle.aspnetcore.swaggergen/6.5.0/swashbuckle.aspnetcore.swaggergen.6.5.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/swashbuckle.aspnetcore.swaggerui/6.5.0/swashbuckle.aspnetcore.swaggerui.6.5.0.nupkg.sha512"
+  ],
+  "logs": []
+}

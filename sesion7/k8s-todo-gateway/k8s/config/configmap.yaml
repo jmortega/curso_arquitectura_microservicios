@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-api-config
+  namespace: todo-app
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  # El hostname "mysql-svc" es el nombre del Service de MySQL dentro del clúster
+  ConnectionStrings__MySQL: "Server=mysql-svc;Port=3306;Database=tododb;User=todo_user;Password=todo_pass;"

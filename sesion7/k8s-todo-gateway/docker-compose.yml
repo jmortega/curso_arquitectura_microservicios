@@ -1,0 +1,42 @@
+services:
+
+  # ── Base de datos MySQL ───────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: todo-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE:      tododb
+      MYSQL_USER:          todo_user
+      MYSQL_PASSWORD:      todo_pass
+    ports:
+      - "3306:3306"            # Expone MySQL en local para conectarse con un cliente
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "todo_user", "-ptodo_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── API .NET 8 ────────────────────────────────────────────────────────────────
+  todo-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: todo-api
+    restart: unless-stopped
+    ports:
+      - "5000:8080"            # http://localhost:5000 → Swagger UI
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__MySQL: "Server=mysql;Port=3306;Database=tododb;User=todo_user;Password=todo_pass;"
+    depends_on:
+      mysql:
+        condition: service_healthy   # Espera a que MySQL esté listo antes de arrancar
+
+volumes:
+  mysql_data:
+    driver: local
