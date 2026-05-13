@@ -1,0 +1,17 @@
+## .gitignore — .NET + Docker
+bin/
+obj/
+*.user
+.vs/
+.idea/
+*.suo
+.DS_Store
+Thumbs.db
+*.log
+
+# EF Core migrations (commit your own)
+# src/**/Migrations/
+
+# Secrets (never commit real secrets)
+**/appsettings.Production.json
+**/.env

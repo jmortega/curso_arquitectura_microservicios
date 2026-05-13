@@ -1,0 +1,187 @@
+# ── Deployment ────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: students-api
+  namespace: students
+  labels:
+    app: students-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: students-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1         # puede crear 1 pod extra durante la actualización
+      maxUnavailable: 0   # nunca baja por debajo de las réplicas definidas (zero-downtime)
+  template:
+    metadata:
+      labels:
+        app: students-api
+    spec:
+      # ── Init containers: esperan a que las dependencias estén listas ─────
+      initContainers:
+        - name: wait-for-mysql
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Esperando MySQL en mysql-svc:3306..."
+              until nc -z mysql-svc 3306; do
+                echo "MySQL no disponible, reintentando en 3s..."; sleep 3
+              done
+              echo "MySQL listo."
+
+        - name: wait-for-rabbitmq
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Esperando RabbitMQ en rabbitmq-svc:5672..."
+              until nc -z rabbitmq-svc 5672; do
+                echo "RabbitMQ no disponible, reintentando en 3s..."; sleep 3
+              done
+              echo "RabbitMQ listo."
+
+      containers:
+        - name: students-api
+          image: students-api:latest
+          imagePullPolicy: Never      # imagen local en Minikube
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: students-api-config
+          env:
+            # El JWT SecretKey se inyecta desde el Secret (dato sensible)
+            - name: Jwt__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: secret-key
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"    # ← el HPA usa este valor como base para calcular el %
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+
+---
+# ── Service ───────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: students-api-svc
+  namespace: students
+  labels:
+    app: students-api
+spec:
+  selector:
+    app: students-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+
+---
+# ── Ingress ───────────────────────────────────────────────────────────────────
+# Requiere: minikube addons enable ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: students-ingress
+  namespace: students
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: students.local     # Añadir en /etc/hosts: $(minikube ip)  students.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: students-api-svc
+                port:
+                  number: 80
+
+---
+# ── HorizontalPodAutoscaler ───────────────────────────────────────────────────
+# Escala automáticamente el Deployment entre minReplicas y maxReplicas
+# basándose en el uso de CPU y memoria de los pods.
+#
+# Requiere metrics-server: minikube addons enable metrics-server
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: students-api-hpa
+  namespace: students
+spec:
+  # Target: el Deployment que queremos escalar
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: students-api
+
+  # Límites de escalado
+  minReplicas: 2    # nunca baja de 2 pods (alta disponibilidad)
+  maxReplicas: 8    # nunca sube de 8 pods
+
+  # Métricas que disparan el escalado
+  metrics:
+    # ── Escala por CPU ────────────────────────────────────────────────────────
+    # Si la CPU media de todos los pods supera el 60% del request (100m),
+    # el HPA crea más réplicas.
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60   # % del requests.cpu
+
+    # ── Escala por Memoria ────────────────────────────────────────────────────
+    # Si la memoria media supera el 70% del request (128Mi),
+    # el HPA crea más réplicas.
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70   # % del requests.memory
+
+  # ── Comportamiento de escalado ────────────────────────────────────────────
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30   # espera 30s antes de escalar hacia arriba
+      policies:
+        - type: Pods
+          value: 2                     # sube máximo 2 pods por ciclo
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 120  # espera 2 min antes de escalar hacia abajo
+      policies:
+        - type: Pods
+          value: 1                     # baja máximo 1 pod por ciclo
+          periodSeconds: 60

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: students-api-config
+  namespace: students
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  ASPNETCORE_URLS: "http://+:8080"
+
+  # Connection string apuntando al Service de MySQL dentro del clúster
+  ConnectionStrings__DefaultConnection: "Server=mysql-svc;Port=3306;Database=students_db;User=students_user;Password=students_pass;"
+
+  # RabbitMQ - host apuntando al Service de RabbitMQ dentro del clúster
+  RabbitMq__Host:     "rabbitmq-svc"
+  RabbitMq__Port:     "5672"
+  RabbitMq__Exchange: "students-events"
+
+  # JWT settings (no sensibles)
+  Jwt__Issuer:             "students-service"
+  Jwt__Audience:           "students-client"
+  Jwt__ExpirationMinutes:  "60"

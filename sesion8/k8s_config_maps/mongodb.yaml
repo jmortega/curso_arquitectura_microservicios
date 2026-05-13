@@ -1,0 +1,104 @@
+# ── PersistentVolumeClaim ─────────────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-read-pvc
+  namespace: academy
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: standard
+---
+# ── Deployment ────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-read
+  namespace: academy
+  labels:
+    app: mongodb-read
+    tier: database
+    role: read
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb-read
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mongodb-read
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:7-jammy
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_DATABASE
+              value: academy_read
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: /data/db
+            # El script se monta en initdb.d → MongoDB lo ejecuta
+            # automáticamente la primera vez que inicializa la base de datos
+            - name: mongo-init
+              mountPath: /docker-entrypoint-initdb.d
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            exec:
+              command:
+                - mongosh
+                - --quiet
+                - --eval
+                - "db.adminCommand('ping').ok"
+            initialDelaySeconds: 40
+            periodSeconds: 20
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - mongosh
+                - --quiet
+                - --eval
+                - "db.adminCommand('ping').ok"
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
+      volumes:
+        - name: mongodb-data
+          persistentVolumeClaim:
+            claimName: mongodb-read-pvc
+        # ConfigMap con el contenido de scripts/mongo-init.js
+        - name: mongo-init
+          configMap:
+            name: mongo-init-js
+---
+# ── Service ───────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-read-svc
+  namespace: academy
+  labels:
+    app: mongodb-read
+spec:
+  selector:
+    app: mongodb-read
+  ports:
+    - port: 27017
+      targetPort: 27017
+  type: ClusterIP

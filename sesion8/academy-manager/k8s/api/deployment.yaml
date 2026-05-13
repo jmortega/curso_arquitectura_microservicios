@@ -1,0 +1,130 @@
+# ── Deployment ────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: academy-api
+  namespace: academy
+  labels:
+    app: academy-api
+    tier: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: academy-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: academy-api
+    spec:
+      containers:
+        - name: academy-api
+          image: academy-manager-api:latest
+          imagePullPolicy: Never        # Minikube: usa imagen local cargada con minikube image load
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: academy-config
+          env:
+            - name: ConnectionStrings__WriteDatabase
+              valueFrom:
+                secretKeyRef:
+                  name: academy-api-secrets
+                  key: write-db-connection
+            - name: MongoDB__ConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: academy-api-secrets
+                  key: mongodb-connection
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 40
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 3
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z postgres-write-svc 5432; do
+                echo "Waiting for PostgreSQL..."; sleep 3;
+              done
+              echo "PostgreSQL is ready."
+        - name: wait-for-mongodb
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z mongodb-read-svc 27017; do
+                echo "Waiting for MongoDB..."; sleep 3;
+              done
+              echo "MongoDB is ready."
+---
+# ── Service ───────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: academy-api-svc
+  namespace: academy
+  labels:
+    app: academy-api
+spec:
+  selector:
+    app: academy-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+# ── HorizontalPodAutoscaler ───────────────────────────────────────────────────
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: academy-api-hpa
+  namespace: academy
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: academy-api
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

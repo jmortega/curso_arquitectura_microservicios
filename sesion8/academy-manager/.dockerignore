@@ -1,0 +1,12 @@
+**/.git
+**/.gitignore
+**/.vs
+**/.idea
+**/bin
+**/obj
+**/*.md
+**/Dockerfile*
+**/docker-compose*
+**/.dockerignore
+**/k8s
+**/scripts

@@ -1,0 +1,107 @@
+# ── PersistentVolumeClaim ─────────────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-write-pvc
+  namespace: academy
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: standard
+---
+# ── Deployment ────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-write
+  namespace: academy
+  labels:
+    app: postgres-write
+    tier: database
+    role: write
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-write
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: postgres-write
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: academy-db-secrets
+                  key: postgres-db
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: academy-db-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: academy-db-secrets
+                  key: postgres-password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            # El script se monta en initdb.d → PostgreSQL lo ejecuta
+            # automáticamente la primera vez que inicializa el cluster
+            - name: postgres-init
+              mountPath: /docker-entrypoint-initdb.d
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "academy", "-d", "academy_write"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "academy", "-d", "academy_write"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-write-pvc
+        # ConfigMap con el contenido de scripts/postgres-init.sql
+        - name: postgres-init
+          configMap:
+            name: postgres-init-sql
+---
+# ── Service ───────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-write-svc
+  namespace: academy
+  labels:
+    app: postgres-write
+spec:
+  selector:
+    app: postgres-write
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP

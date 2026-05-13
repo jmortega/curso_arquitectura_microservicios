@@ -1,0 +1,150 @@
+# ── PersistentVolumeClaim ─────────────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: students
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: standard
+
+---
+# ── ConfigMap con el script de inicialización SQL ────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-sql
+  namespace: students
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS `students` (
+        `id`                CHAR(36)     NOT NULL DEFAULT (UUID()),
+        `first_name`        VARCHAR(100) NOT NULL,
+        `last_name`         VARCHAR(100) NOT NULL,
+        `email`             VARCHAR(150) NOT NULL UNIQUE,
+        `enrollment_number` VARCHAR(20)  NOT NULL UNIQUE,
+        `date_of_birth`     DATE         NULL,
+        `phone`             VARCHAR(20)  NULL,
+        `address`           VARCHAR(255) NULL,
+        `is_active`         TINYINT(1)   NOT NULL DEFAULT 1,
+        `created_at`        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at`        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        INDEX `idx_email`      (`email`),
+        INDEX `idx_enrollment` (`enrollment_number`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE IF NOT EXISTS `users` (
+        `id`            CHAR(36)     NOT NULL,
+        `username`      VARCHAR(50)  NOT NULL UNIQUE,
+        `email`         VARCHAR(150) NOT NULL UNIQUE,
+        `password_hash` VARCHAR(255) NOT NULL,
+        `role`          ENUM('Admin','Teacher','ReadOnly') NOT NULL DEFAULT 'ReadOnly',
+        `is_active`     TINYINT(1)   NOT NULL DEFAULT 1,
+        `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        INDEX `idx_username` (`username`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    INSERT IGNORE INTO `students` (`first_name`, `last_name`, `email`, `enrollment_number`, `date_of_birth`, `phone`) VALUES
+        ('Ana',    'García',   'ana.garcia@university.edu',  'A2024001', '2000-03-15', '555-0101'),
+        ('Carlos', 'Martínez', 'carlos.m@university.edu',   'A2024002', '1999-07-22', '555-0102'),
+        ('Laura',  'López',    'laura.lopez@university.edu', 'A2024003', '2001-01-10', '555-0103');
+
+---
+# ── Deployment ────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: students
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  strategy:
+    type: Recreate          # Evita dos pods accediendo al mismo volumen
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root-password
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: database
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: password
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: mysql-init
+              mountPath: /docker-entrypoint-initdb.d
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_pass"]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 5
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_pass"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 10
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+        - name: mysql-init
+          configMap:
+            name: mysql-init-sql
+
+---
+# ── Service ───────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-svc
+  namespace: students
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
