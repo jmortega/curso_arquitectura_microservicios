@@ -1,0 +1,62 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  KEDA — Kubernetes Event-Driven Autoscaling
+#
+#  Escala el Read Service (academy-api) basándose en la longitud de la cola
+#  de RabbitMQ "AlumnoMatriculadoEvent".
+#
+#  Por qué KEDA en lugar del HPA tradicional:
+#    El HPA basado en CPU reacciona tarde: primero la cola crece, luego el
+#    consumer se satura, luego la CPU sube. Para ráfagas de matriculaciones
+#    necesitamos escalar ANTES de que la CPU se dispare, reaccionando al origen
+#    del problema: la longitud de la cola.
+#
+#  Comportamiento:
+#    - Si la cola tiene 0 mensajes → 0 réplicas (Scale-to-Zero)
+#    - Por cada 20 mensajes en cola → +1 Pod de consumidor
+#    - Máximo 10 Pods de consumer
+#
+#  Prerequisito: instalar KEDA en el clúster:
+#    helm repo add kedacore https://kedacore.github.io/charts
+#    helm install keda kedacore/keda --namespace keda --create-namespace
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── TriggerAuthentication: credenciales RabbitMQ para KEDA ───────────────────
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-rabbitmq-auth
+  namespace: academy
+spec:
+  secretTargetRef:
+    - parameter: host
+      name: academy-api-secrets
+      key: rabbitmq-connection
+---
+# ── ScaledObject: escala academy-api según la cola de RabbitMQ ───────────────
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: academy-api-scaler
+  namespace: academy
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: academy-api
+  minReplicaCount: 1    # mínimo 1 réplica siempre disponible (cambiar a 0 para Scale-to-Zero)
+  maxReplicaCount: 10
+  cooldownPeriod: 60    # segundos antes de escalar hacia abajo
+  pollingInterval: 10   # frecuencia de comprobación de la cola (segundos)
+  triggers:
+    - type: rabbitmq
+      metadata:
+        # Cola que KEDA monitoriza
+        queueName: AlumnoMatriculadoEvent
+        # Número de mensajes por réplica antes de añadir un Pod nuevo
+        queueLength: "20"
+        # Protocolo: http usa la Management API de RabbitMQ (más fácil de configurar)
+        protocol: http
+        # URL de la Management API de RabbitMQ
+        hostFromEnv: RABBITMQ_MANAGEMENT_URL
+      authenticationRef:
+        name: keda-rabbitmq-auth

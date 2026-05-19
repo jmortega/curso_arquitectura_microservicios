@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "dgSpecHash": "mAeNRlAPc8ec8cdbZ5EtIz78glaFgM6V828IGwxT4l8+wIylhnk/Mq6cWyiiaVtKZ9BFtqUgy2IzcTOoczfpBA==",
+  "success": true,
+  "projectFilePath": "/home/linux/Descargas/sesion10/academy/src/AcademyManager.Application/AcademyManager.Application.csproj",
+  "expectedPackageFiles": [
+    "/home/linux/.nuget/packages/fluentvalidation/11.9.0/fluentvalidation.11.9.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/fluentvalidation.dependencyinjectionextensions/11.9.0/fluentvalidation.dependencyinjectionextensions.11.9.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/mediatr/12.2.0/mediatr.12.2.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/mediatr.contracts/2.0.1/mediatr.contracts.2.0.1.nupkg.sha512",
+    "/home/linux/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.0/microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/microsoft.extensions.logging.abstractions/8.0.0/microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/mongodb.bson/2.24.0/mongodb.bson.2.24.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/system.memory/4.5.5/system.memory.4.5.5.nupkg.sha512",
+    "/home/linux/.nuget/packages/system.runtime.compilerservices.unsafe/5.0.0/system.runtime.compilerservices.unsafe.5.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

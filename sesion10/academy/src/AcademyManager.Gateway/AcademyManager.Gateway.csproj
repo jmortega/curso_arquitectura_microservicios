@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- GC servidor: el Gateway es stateless y maneja alto volumen de conexiones -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+  <ItemGroup>
+    <!--
+      YARP (Yet Another Reverse Proxy): proxy inverso nativo .NET 8.
+      Rendimiento superior a Ocelot por usar directamente los pipelines
+      de ASP.NET Core sin capas intermedias. Soporta balanceo de carga,
+      health checks activos y transformaciones de cabeceras.
+    -->
+    <PackageReference Include="Yarp.ReverseProxy"        Version="2.2.0" />
+    <PackageReference Include="Serilog.AspNetCore"       Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console"    Version="5.0.1" />
+    <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,113 @@
+{
+  "title": "Academy Manager — API Overview",
+  "uid": "academy-api-overview",
+  "tags": ["academy", "api", "dotnet"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Peticiones HTTP por segundo",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [{
+        "expr": "rate(http_requests_received_total{job=\"academy-api\"}[1m])",
+        "legendFormat": "{{method}} {{route}} {{code}}"
+      }],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Latencia P50 / P95 / P99",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job=\"academy-api\"}[1m]))", "legendFormat": "P50" },
+        { "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"academy-api\"}[1m]))", "legendFormat": "P95" },
+        { "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job=\"academy-api\"}[1m]))", "legendFormat": "P99" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Total de peticiones (contador)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
+      "targets": [{ "expr": "sum(http_requests_received_total{job=\"academy-api\"})", "legendFormat": "Total" }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 4,
+      "title": "Peticiones en curso",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
+      "targets": [{ "expr": "sum(http_requests_in_progress{job=\"academy-api\"})", "legendFormat": "En curso" }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 5,
+      "title": "Errores HTTP 4xx / 5xx",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+      "targets": [{ "expr": "sum(rate(http_requests_received_total{job=\"academy-api\",code=~\"4..|5..\"}[5m]))", "legendFormat": "Errores/s" }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "red", "value": 0.1 }] }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Health Check — PostgreSQL",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
+      "targets": [{ "expr": "healthcheck_status{name=\"postgres-write\"}", "legendFormat": "PostgreSQL" }],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "Unhealthy", "color": "red" }, "1": { "text": "Healthy", "color": "green" } } }]
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Uso de memoria .NET (heap)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "targets": [
+        { "expr": "dotnet_gc_heap_size_bytes{job=\"academy-api\"}", "legendFormat": "Heap total" },
+        { "expr": "process_working_set_bytes{job=\"academy-api\"}", "legendFormat": "Working set" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "id": 8,
+      "title": "GC Collections por generación",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        { "expr": "rate(dotnet_gc_collections_total{job=\"academy-api\",generation=\"0\"}[1m])", "legendFormat": "Gen 0" },
+        { "expr": "rate(dotnet_gc_collections_total{job=\"academy-api\",generation=\"1\"}[1m])", "legendFormat": "Gen 1" },
+        { "expr": "rate(dotnet_gc_collections_total{job=\"academy-api\",generation=\"2\"}[1m])", "legendFormat": "Gen 2" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "id": 9,
+      "title": "Peticiones por ruta (top 10)",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "targets": [{
+        "expr": "topk(10, sum by(route) (http_requests_received_total{job=\"academy-api\"}))",
+        "legendFormat": "{{route}}"
+      }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    }
+  ]
+}

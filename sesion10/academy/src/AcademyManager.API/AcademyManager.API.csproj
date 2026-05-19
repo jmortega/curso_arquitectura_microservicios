@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <GarbageCollectionAdaptationMode>1</GarbageCollectionAdaptationMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi"                         Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore"                               Version="6.5.0" />
+    <PackageReference Include="MediatR"                                              Version="12.2.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design"                 Version="8.0.0" />
+    <PackageReference Include="Serilog.AspNetCore"                                   Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console"                                Version="5.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.0" />
+
+    <!-- Prometheus -->
+    <PackageReference Include="prometheus-net.AspNetCore"          Version="8.2.1" />
+    <PackageReference Include="prometheus-net.AspNetCore.HealthChecks" Version="8.2.1" />
+
+    <!--
+      RabbitMQ Health Check.
+      Se usa la variante .v6 porque MassTransit 8.x depende de RabbitMQ.Client 6.x.
+      La variante sin sufijo (AspNetCore.HealthChecks.Rabbitmq 9.0.0) requiere
+      RabbitMQ.Client 7.x, incompatible con MassTransit 8.2.x.
+      API: registrar IConnection singleton + llamar .AddRabbitMQ() sin parámetros.
+    -->
+    <PackageReference Include="AspNetCore.HealthChecks.Rabbitmq.v6" Version="9.0.0" />
+
+    <!-- MassTransit + RabbitMQ + Outbox -->
+    <PackageReference Include="MassTransit"                    Version="8.2.3" />
+    <PackageReference Include="MassTransit.RabbitMQ"           Version="8.2.3" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" Version="8.2.3" />
+
+    <!--
+      OpenTelemetry: actualizados a 1.15.3 para corregir las vulnerabilidades:
+        GHSA-4625-4j76-fww9 (OTLP disk retry inseguro)
+        GHSA-88hf-wf7h-7w4m (persistent storage cleanup)
+      Ambas estaban presentes en 1.9.0.
+    -->
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting"                  Version="1.15.3" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore"          Version="1.15.2" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http"                Version="1.15.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.0.0-beta.12" />
+    <PackageReference Include="MongoDB.Driver.Core.Extensions.DiagnosticSources"  Version="1.4.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol"      Version="1.15.3" />
+    <PackageReference Include="OpenTelemetry.Exporter.Zipkin"                     Version="1.15.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AcademyManager.Application\AcademyManager.Application.csproj" />
+    <ProjectReference Include="..\AcademyManager.Infrastructure\AcademyManager.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

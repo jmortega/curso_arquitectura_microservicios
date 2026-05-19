@@ -1,0 +1,141 @@
+# ── Academy API — Deployment ──────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: academy-api
+  namespace: academy
+  labels:
+    app: academy-api
+    tier: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: academy-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # máximo 1 Pod extra durante el despliegue
+      maxUnavailable: 0  # Zero-downtime garantizado
+  template:
+    metadata:
+      labels:
+        app: academy-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port:   "8080"
+        prometheus.io/path:   "/metrics"
+    spec:
+      containers:
+        - name: academy-api
+          image: academy-manager-api:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: academy-config
+          env:
+            - name: ConnectionStrings__WriteDatabase
+              valueFrom:
+                secretKeyRef:
+                  name: academy-api-secrets
+                  key: write-db-connection
+            - name: MongoDB__ConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: academy-api-secrets
+                  key: mongodb-connection
+            - name: RabbitMQ__ConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: academy-api-secrets
+                  key: rabbitmq-connection
+            - name: RABBITMQ_MANAGEMENT_URL
+              value: "http://rabbitmq-svc:15672"
+            - name: Tracing__ServiceName
+              value: "academy-manager"
+            - name: Tracing__Backend
+              value: "jaeger"
+            - name: Tracing__JaegerEndpoint
+              value: "http://jaeger-svc:4317"
+            - name: Tracing__ZipkinEndpoint
+              value: "http://zipkin-svc:9411/api/v2/spans"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu:    "100m"
+            limits:
+              memory: "256Mi"
+              cpu:    "500m"
+
+          # ── Startup Probe ──────────────────────────────────────────────────
+          #  Da tiempo a que .NET 8 arranque, conecte a PostgreSQL y a RabbitMQ.
+          #  60s máximo (12 intentos × 5s). Solo inicia las otras probes cuando
+          #  este pasa por primera vez.
+          startupProbe:
+            httpGet:
+              path: /healthz/live
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 12
+
+          # ── Liveness Probe ─────────────────────────────────────────────────
+          #  ¿Está el proceso vivo? No verifica dependencias externas.
+          #  Si falla 3 veces, Kubernetes reinicia el contenedor.
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: 8080
+            initialDelaySeconds: 0   # startupProbe ya garantizó el arranque
+            periodSeconds: 15
+            failureThreshold: 3
+
+          # ── Readiness Probe ────────────────────────────────────────────────
+          #  ¿Puede recibir tráfico? Verifica PostgreSQL y RabbitMQ.
+          #  Si falla, el Service deja de enviar peticiones a este Pod,
+          #  pero NO lo reinicia (a diferencia de la Liveness Probe).
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            failureThreshold: 3
+
+      # ── Init Containers ────────────────────────────────────────────────────
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command: ["sh", "-c",
+            "until nc -z postgres-write-svc 5432; do echo 'Waiting for PostgreSQL...'; sleep 3; done"]
+        - name: wait-for-mongodb
+          image: busybox:1.36
+          command: ["sh", "-c",
+            "until nc -z mongodb-read-svc 27017; do echo 'Waiting for MongoDB...'; sleep 3; done"]
+        - name: wait-for-rabbitmq
+          image: busybox:1.36
+          command: ["sh", "-c",
+            "until nc -z rabbitmq-svc 5672; do echo 'Waiting for RabbitMQ...'; sleep 3; done"]
+        - name: wait-for-jaeger
+          image: busybox:1.36
+          command: ["sh", "-c",
+            "until nc -z jaeger-svc 4317; do echo 'Waiting for Jaeger...'; sleep 3; done"]
+---
+# ── Service ───────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: academy-api-svc
+  namespace: academy
+  labels:
+    app: academy-api
+spec:
+  selector:
+    app: academy-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP

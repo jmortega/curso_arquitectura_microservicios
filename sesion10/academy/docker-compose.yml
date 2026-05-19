@@ -1,0 +1,281 @@
+version: "3.9"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Academy Manager — CQRS + Hexagonal + EDA + Observabilidad + Trazabilidad
+#
+#  Flujo completo:
+#    Cliente → YARP Gateway :8090 → academy-api :5000
+#    academy-api → PostgreSQL (write) → Outbox → RabbitMQ → MongoDB (read)
+#
+#  Tracing__Backend: "jaeger" | "zipkin" | "both"
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ── Write Database: PostgreSQL ────────────────────────────────────────────────
+  postgres-write:
+    image: postgres:16-alpine
+    container_name: academy-postgres-write
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: academy_write
+      POSTGRES_USER: academy
+      POSTGRES_PASSWORD: academy_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_write_data:/var/lib/postgresql/data
+      - ./scripts/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U academy -d academy_write"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - academy-network
+
+  # ── Read Database: MongoDB ────────────────────────────────────────────────────
+  mongodb-read:
+    image: mongo:7-jammy
+    container_name: academy-mongodb-read
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: academy_read
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_read_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - academy-network
+
+  # ── RabbitMQ — Bus de eventos EDA ─────────────────────────────────────────────
+  #
+  #  Management UI: http://localhost:15672  (guest/guest)
+  #  AMQP:          amqp://guest:guest@localhost:5672
+  #
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: academy-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5673:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - academy-network
+
+  # ── API: .NET 8 ───────────────────────────────────────────────────────────────
+  academy-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: academy-api
+    restart: unless-stopped
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__WriteDatabase: "Host=postgres-write;Port=5432;Database=academy_write;Username=academy;Password=academy_pass"
+      MongoDB__ConnectionString: "mongodb://mongodb-read:27017"
+      MongoDB__DatabaseName: "academy_read"
+      RabbitMQ__ConnectionString: "amqp://guest:guest@rabbitmq:5672"
+      Tracing__ServiceName:         "academy-manager"
+      Tracing__PostgresServiceName: "postgres-write"
+      Tracing__MongoServiceName:    "mongodb-read"
+      Tracing__Backend:             "both"
+      Tracing__JaegerEndpoint:      "http://jaeger:4317"
+      Tracing__ZipkinEndpoint:      "http://zipkin:9411/api/v2/spans"
+    depends_on:
+      postgres-write:
+        condition: service_healthy
+      mongodb-read:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+      zipkin:
+        condition: service_started
+    networks:
+      - academy-network
+
+  # ── YARP API Gateway ──────────────────────────────────────────────────────────
+  #
+  #  Punto de entrada único para los clientes. Enruta hacia academy-api.
+  #  UI Swagger del Gateway: http://localhost:8090
+  #  Métricas del Gateway:   http://localhost:8090/metrics
+  # ─────────────────────────────────────────────────────────────────────────────
+  academy-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.Gateway
+    container_name: academy-gateway
+    restart: unless-stopped
+    ports:
+      - "8090:8081"
+    depends_on:
+      - academy-api
+    networks:
+      - academy-network
+
+  # ── Jaeger ────────────────────────────────────────────────────────────────────
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: academy-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      SPAN_STORAGE_TYPE: memory
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - academy-network
+
+  # ── Zipkin ────────────────────────────────────────────────────────────────────
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: academy-zipkin
+    restart: unless-stopped
+    environment:
+      STORAGE_TYPE: mem
+    ports:
+      - "9411:9411"
+    networks:
+      - academy-network
+
+  # ── PostgreSQL Exporter ───────────────────────────────────────────────────────
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: academy-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://academy:academy_pass@postgres-write:5432/academy_write?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      postgres-write:
+        condition: service_healthy
+    networks:
+      - academy-network
+
+  # ── MongoDB Exporter ──────────────────────────────────────────────────────────
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.40
+    container_name: academy-mongodb-exporter
+    restart: unless-stopped
+    command:
+      - "--mongodb.uri=mongodb://mongodb-read:27017"
+      - "--collect-all"
+    ports:
+      - "9216:9216"
+    depends_on:
+      mongodb-read:
+        condition: service_healthy
+    networks:
+      - academy-network
+
+  # ── Node Exporter ─────────────────────────────────────────────────────────────
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: academy-node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    networks:
+      - academy-network
+
+  # ── Prometheus ────────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: academy-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    networks:
+      - academy-network
+
+  # ── Grafana ───────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: academy-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/academy-api.json
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - academy-network
+
+  # ── Mongo Express (UI opcional) ───────────────────────────────────────────────
+  mongo-express:
+    image: mongo-express:latest
+    container_name: academy-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb-read
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    depends_on:
+      mongodb-read:
+        condition: service_healthy
+    networks:
+      - academy-network
+    profiles:
+      - tools
+
+volumes:
+  postgres_write_data:  { driver: local }
+  mongodb_read_data:    { driver: local }
+  rabbitmq_data:        { driver: local }
+  prometheus_data:      { driver: local }
+  grafana_data:         { driver: local }
+
+networks:
+  academy-network:
+    driver: bridge
