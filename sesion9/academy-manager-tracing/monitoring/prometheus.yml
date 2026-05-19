@@ -1,0 +1,99 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Prometheus — configuración para Academy Manager
+#
+#  Jobs:
+#    prometheus       → auto-monitorización de Prometheus
+#    academy-api      → métricas .NET 8 (prometheus-net / OpenTelemetry)
+#    node-metrics     → métricas de host vía Node Exporter  ← CORREGIDO
+#    postgres-metrics → métricas de PostgreSQL
+#    mongodb-metrics  → métricas de MongoDB
+# ═══════════════════════════════════════════════════════════════════════════════
+
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+  scrape_timeout:      10s
+
+scrape_configs:
+
+  # ── 1. Auto-monitorización de Prometheus ──────────────────────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # ── 2. API .NET 8 ─────────────────────────────────────────────────────────────
+  - job_name: "academy-api"
+    scrape_interval: 10s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["academy-api:8080"]
+        labels:
+          service: "academy-api"
+          env:     "production"
+
+  # ── 3. Node Exporter ──────────────────────────────────────────────────────────
+  #
+  #  CAMBIO CLAVE respecto a la versión anterior:
+  #    Antes:  host.docker.internal:9100   ← fallaba en Docker Desktop
+  #    Ahora:  node-exporter:9100          ← resolución interna por nombre
+  #                                            de servicio en academy-network
+  #
+  #  Al estar node-exporter en la misma red bridge que Prometheus, Docker
+  #  resuelve "node-exporter" a su IP interna automáticamente. No hay
+  #  dependencia de host.docker.internal ni de la topología de red del host.
+  # ─────────────────────────────────────────────────────────────────────────────
+  - job_name: "node-metrics"
+    scrape_interval: 15s
+    scrape_timeout:  10s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          service: "node-exporter"
+          host:    "academy-host"
+          env:     "production"
+
+  # ── 4. PostgreSQL Exporter ────────────────────────────────────────────────────
+  - job_name: "postgres-metrics"
+    scrape_interval: 15s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels:
+          service: "postgresql"
+          db:      "academy_write"
+          env:     "production"
+
+  # ── 5. MongoDB Exporter ───────────────────────────────────────────────────────
+  - job_name: "mongodb-metrics"
+    scrape_interval: 15s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["mongodb-exporter:9216"]
+        labels:
+          service: "mongodb"
+          db:      "academy_read"
+          env:     "production"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Consultas PromQL útiles para Node Exporter
+#
+#  % CPU usado:
+#    100 - (avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+#
+#  RAM disponible (MB):
+#    node_memory_MemAvailable_bytes / 1024 / 1024
+#
+#  % disco usado en /:
+#    100 - ((node_filesystem_avail_bytes{mountpoint="/"} * 100)
+#            / node_filesystem_size_bytes{mountpoint="/"})
+#
+#  Carga media 5 min:
+#    node_load5
+#
+#  Red recibida (bytes/s en eth0):
+#    rate(node_network_receive_bytes_total{device="eth0"}[5m])
+#
+#  Dashboard Grafana → importar ID: 1860  ("Node Exporter Full")
+# ═══════════════════════════════════════════════════════════════════════════════

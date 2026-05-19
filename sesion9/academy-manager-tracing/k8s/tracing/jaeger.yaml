@@ -1,0 +1,78 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Jaeger — Distributed Tracing (All-in-One para Minikube / dev)
+#
+#  Para producción con alta carga usar el Jaeger Operator + Elasticsearch.
+#  Documentación: https://www.jaegertracing.io/docs/operator/
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── Deployment ────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: academy
+  labels:
+    app: jaeger
+    component: tracing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+        component: tracing
+    spec:
+      containers:
+        - name: jaeger
+          image: jaegertracing/all-in-one:latest
+          env:
+            - name: COLLECTOR_OTLP_ENABLED
+              value: "true"
+            - name: SPAN_STORAGE_TYPE
+              value: memory          # cambiar a "elasticsearch" en producción
+          ports:
+            - containerPort: 16686   # UI
+              name: ui
+            - containerPort: 4317    # OTLP gRPC
+              name: otlp-grpc
+            - containerPort: 4318    # OTLP HTTP
+              name: otlp-http
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "200m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 16686
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+# ── Service ───────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-svc
+  namespace: academy
+  labels:
+    app: jaeger
+spec:
+  selector:
+    app: jaeger
+  ports:
+    - name: ui
+      port: 16686
+      targetPort: 16686
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+  type: ClusterIP

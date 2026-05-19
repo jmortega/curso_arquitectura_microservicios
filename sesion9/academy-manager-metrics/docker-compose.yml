@@ -1,0 +1,243 @@
+version: "3.9"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Academy Manager — CQRS + Hexagonal Architecture + Observabilidad
+#
+#  Write DB   →  PostgreSQL      (5432)   — commands, EF Core, transaccional
+#  Read  DB   →  MongoDB         (27017)  — queries, read models desnormalizados
+#  API        →  .NET 8          (5000)   — REST + Swagger + /metrics
+#  Métricas   →  Prometheus      (9090)   — scraping y almacenamiento de series
+#  Dashboards →  Grafana         (3000)   — visualización
+#  Exporters  →  PG + Mongo exp  (9187/9216) — métricas de las BBDDs
+#  Node Exp   →  Node Exporter   (9100)   — métricas de CPU/RAM/disco del host
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ── Write Database: PostgreSQL ────────────────────────────────────────────────
+  postgres-write:
+    image: postgres:16-alpine
+    container_name: academy-postgres-write
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: academy_write
+      POSTGRES_USER: academy
+      POSTGRES_PASSWORD: academy_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_write_data:/var/lib/postgresql/data
+      - ./scripts/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U academy -d academy_write"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - academy-network
+
+  # ── Read Database: MongoDB ─────────────────────────────────────────────────────
+  mongodb-read:
+    image: mongo:7-jammy
+    container_name: academy-mongodb-read
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: academy_read
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_read_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - academy-network
+
+  # ── API: .NET 8 ────────────────────────────────────────────────────────────────
+  academy-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: academy-api
+    restart: unless-stopped
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__WriteDatabase: "Host=postgres-write;Port=5432;Database=academy_write;Username=academy;Password=academy_pass"
+      MongoDB__ConnectionString: "mongodb://mongodb-read:27017"
+      MongoDB__DatabaseName: "academy_read"
+    depends_on:
+      postgres-write:
+        condition: service_healthy
+      mongodb-read:
+        condition: service_healthy
+    networks:
+      - academy-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── PostgreSQL Exporter — expone métricas de PG en :9187 ─────────────────────
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: academy-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://academy:academy_pass@postgres-write:5432/academy_write?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      postgres-write:
+        condition: service_healthy
+    networks:
+      - academy-network
+
+  # ── MongoDB Exporter — expone métricas de Mongo en :9216 ─────────────────────
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.40
+    container_name: academy-mongodb-exporter
+    restart: unless-stopped
+    command:
+      - "--mongodb.uri=mongodb://mongodb-read:27017"
+      - "--collect-all"
+    ports:
+      - "9216:9216"
+    depends_on:
+      mongodb-read:
+        condition: service_healthy
+    networks:
+      - academy-network
+
+  # ── Node Exporter — métricas de infraestructura del host (CPU/RAM/disco/red) ──
+  #
+  #  Accesible en: http://localhost:9100/metrics
+  #
+  #  Volúmenes montados en solo lectura (ro) por seguridad:
+  #    /proc  → estadísticas de procesos y CPU del kernel
+  #    /sys   → información de dispositivos y hardware
+  #    /      → sistema de ficheros raíz para métricas de disco
+  #
+  #  El flag --path.* redirige las rutas al host real montado en el contenedor,
+  #  necesario para leer métricas del SO del host y no del contenedor en sí.
+  #
+  #  network_mode: host  →  imprescindible para que node_exporter lea
+  #                          las interfaces de red reales del host.
+  #                          Nota: en macOS/Windows Docker Desktop el host
+  #                          es una VM Linux; las métricas reflejan esa VM.
+  # ─────────────────────────────────────────────────────────────────────────────
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: academy-node-exporter
+    restart: unless-stopped
+    # network_mode: host permite acceder a las interfaces de red reales del host.
+    # Si necesitas mantener el servicio en la red bridge (ej. entornos Windows/macOS
+    # o restricciones de seguridad), comenta network_mode y descomenta la sección
+    # "ports" + "networks" alternativa que aparece a continuación.
+    #network_mode: host
+    #pid: host   # necesario para leer /proc de procesos del host correctamente
+    volumes:
+      - /proc:/host/proc:ro          # estadísticas del kernel (CPU, memoria, I/O)
+      - /sys:/host/sys:ro            # información de hardware y dispositivos
+      - /:/rootfs:ro                 # sistema de ficheros raíz (métricas de disco)
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      # Excluye pseudo-sistemas de ficheros para evitar métricas irrelevantes
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+      # Colectores adicionales recomendados para el proyecto Academy
+      - "--collector.netstat"         # estadísticas de red (conexiones TCP/UDP)
+      - "--collector.meminfo"         # uso detallado de memoria RAM
+      - "--collector.loadavg"         # carga media del sistema (1m, 5m, 15m)
+      - "--collector.diskstats"       # I/O de disco por dispositivo
+    # ── Alternativa sin network_mode: host ────────────────────────────────────
+    # Descomenta este bloque y comenta network_mode/pid: host si necesitas
+    # que node-exporter esté en la red bridge del proyecto:
+    #
+    ports:
+       - "9100:9100"
+    networks:
+       - academy-network
+
+  # ── Prometheus ─────────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: academy-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"   # retención de 15 días
+      - "--web.enable-lifecycle"               # permite reload sin reiniciar
+    depends_on:
+      academy-api:
+        condition: service_healthy
+    networks:
+      - academy-network
+
+  # ── Grafana ────────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: academy-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/academy-api.json
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - academy-network
+
+  # ── Mongo Express (UI opcional para MongoDB) ──────────────────────────────────
+  mongo-express:
+    image: mongo-express:latest
+    container_name: academy-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb-read
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    depends_on:
+      mongodb-read:
+        condition: service_healthy
+    networks:
+      - academy-network
+    profiles:
+      - tools
+
+volumes:
+  postgres_write_data:
+    driver: local
+  mongodb_read_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  academy-network:
+    driver: bridge

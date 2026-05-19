@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="MediatR" Version="12.2.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.0" />
+
+    <!-- Prometheus -->
+    <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
+    <PackageReference Include="prometheus-net.AspNetCore.HealthChecks" Version="8.2.1" />
+
+    <!-- OpenTelemetry: SDK base + hosting -->
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
+
+    <!-- Instrumentación ASP.NET Core (peticiones HTTP entrantes) -->
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
+
+    <!-- Instrumentación HttpClient (peticiones HTTP salientes) -->
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.9.0" />
+
+    <!-- Instrumentación EF Core (queries SQL → peer.service=postgres-write) -->
+    <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.0.0-beta.12" />
+
+    <!--
+      Instrumentación MongoDB Driver.
+      Captura operaciones find/insert/update/delete como spans con peer.service=mongodb-read.
+      Necesita también configurar ClusterConfigurator en MongoClientSettings
+      (ver DependencyInjection.cs → AddMongoClientInstrumentation).
+    -->
+    <PackageReference Include="MongoDB.Driver.Core.Extensions.DiagnosticSources" Version="1.4.0" />
+
+    <!-- Exporter OTLP → Jaeger vía gRPC -->
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.9.0" />
+
+    <!-- Exporter HTTP → Zipkin -->
+    <PackageReference Include="OpenTelemetry.Exporter.Zipkin" Version="1.9.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AcademyManager.Application\AcademyManager.Application.csproj" />
+    <ProjectReference Include="..\AcademyManager.Infrastructure\AcademyManager.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

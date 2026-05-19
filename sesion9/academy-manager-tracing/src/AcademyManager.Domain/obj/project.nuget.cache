@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "0O2/+sN7p1QIbne16vjipa6PHgxoKIMX8R6dBP1AIM8hYrNsY7T5ZWaJotsemqlNgLoLwqOqe4oAEBKYK/UIhg==",
+  "success": true,
+  "projectFilePath": "/home/linux/Descargas/sesion9/academy-manager-tracing/src/AcademyManager.Domain/AcademyManager.Domain.csproj",
+  "expectedPackageFiles": [
+    "/home/linux/.nuget/packages/mediatr/12.2.0/mediatr.12.2.0.nupkg.sha512",
+    "/home/linux/.nuget/packages/mediatr.contracts/2.0.1/mediatr.contracts.2.0.1.nupkg.sha512",
+    "/home/linux/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.0/microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
